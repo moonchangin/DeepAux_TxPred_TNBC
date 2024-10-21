@@ -18,6 +18,9 @@ import glob
 from data_utils import BreastCancerDataset
 import xgboost as xgb  # Importing XGBoost
 
+from imblearn.over_sampling import SMOTE
+from imblearn.pipeline import Pipeline as ImbPipeline
+
 # Initialize an empty list to store results
 output_df = []
 
@@ -32,7 +35,7 @@ args = parser.parse_args()
             # 'GSTP1', 'BAG1', 'GAPDH', 'TFRC', 'GUSB', 'BCL2', 'SCUBE2', 'ACTB']
 
 # Collect all CSV file paths from the specified directory
-file_paths_unsorted = glob.glob('./clindb_breast/*.csv')
+file_paths_unsorted = glob.glob('./clindb_breast_TNBC/*.csv')
 # Ensure the "main_task_file" is first and sort the remaining ones
 file_paths = sorted(file_paths_unsorted, key=lambda x: (args.main_task_file not in x, x))
 
@@ -66,6 +69,10 @@ rna_features = rna_data.iloc[:, 4:]
 
 # Split into training and testing sets (70/30 split)
 X_train, X_test, y_train, y_test = train_test_split(rna_features, rna_data.iloc[:,1], test_size=0.3, random_state=args.mccv, stratify=rna_data.iloc[:,1])
+
+# Apply SMOTE to the training data
+smote = SMOTE(random_state=args.mccv)
+X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
 
 # Parameter grids for grid search
 randomforest_grid = {
@@ -102,13 +109,20 @@ xgboost_grid = {
     "classifier__colsample_bytree": [0.6, 0.8, 1.0],
 }
 
-# Define the preprocessing pipeline
-preprocessing_pipeline = Pipeline([
+# Define the preprocessing pipeline with SMOTE
+preprocessing_pipeline = ImbPipeline([
     ('variance_threshold', VarianceThreshold(threshold=0)),
     ('select_k_best', SelectKBest(f_classif, k=500)),
     ('scaler', StandardScaler()),
     ('pca', PCA(n_components=10))
 ])
+# Define the preprocessing pipeline
+# preprocessing_pipeline = Pipeline([
+#     ('variance_threshold', VarianceThreshold(threshold=0)),
+#     ('select_k_best', SelectKBest(f_classif, k=500)),
+#     ('scaler', StandardScaler()),
+#     ('pca', PCA(n_components=10))
+# ])
 
 # Modify baseline models to use RandomizedSearchCV
 baseline_models = {
@@ -120,14 +134,7 @@ baseline_models = {
         random_state=args.mccv,
         n_jobs=10
     ),
-    # "MLP": RandomizedSearchCV(
-    #     Pipeline([('preprocessing', preprocessing_pipeline), ('classifier', MLPClassifier())]),
-    #     param_distributions=mlp_grid,
-    #     n_iter=50,
-    #     cv=5,
-    #     random_state=args.mccv,
-    #     n_jobs=20
-    # ),
+
     "LogisticRegression": RandomizedSearchCV(
         Pipeline([('preprocessing', preprocessing_pipeline), ('classifier', LogisticRegression())]),
         param_distributions=logisticregression_grid,
@@ -148,7 +155,7 @@ baseline_models = {
 
 # Loop to train and evaluate models
 for model_name, model in baseline_models.items():
-    model.fit(X_train, y_train)
+    model.fit(X_train_resampled, y_train_resampled)
     best_model = model.best_estimator_
     probas = best_model.predict_proba(X_test)[:, 1]
     

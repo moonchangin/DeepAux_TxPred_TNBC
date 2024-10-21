@@ -55,7 +55,7 @@ def generate_test_indices(first_file_path, test_size_fraction,seed):
 
 # Define the file paths to your datasets
 # Collect all CSV file paths from the specified directory
-file_paths_unsorted = glob.glob('./clindb_breast/*.csv')
+file_paths_unsorted = glob.glob('./clindb_breast_TNBC/*.csv')
 # Sort the file paths to ensure "GSE164458_paclitaxel.csv" is first [any main task file name you would like to use]
 file_paths = sorted(file_paths_unsorted, key=lambda x: (args.main_task_file not in x, x))
 # Generate immune_paths based on the file_paths
@@ -228,4 +228,4 @@ results_df = pd.DataFrame({
 # remove .csv
 main_task_name = args.main_task_file.replace('.csv', '')
 results_df.to_csv(f'./output/MCCV_PCA_aux_learn_{main_task_name}_{args.mccv}.csv', index=False)
-
+# results_df.to_csv(f'./output/MCCV_PCA_aux_learn_{args.mccv}.csv', index=False)
