@@ -84,12 +84,12 @@ preprocessing_pipeline = Pipeline([
 ```
 
 ## Reproducing Figures
-Each figure related to the study can be reproduced by running the codes or using the results provided in their respective directories:
+Each figure related to the study can be reproduced by running the codes or using the pickle model provided in their respective directories:
 
 - **Figure 2**: `fig2_alpha_analysis`
 - **Figures 3 & 4**: `fig3_4_update`
 - **Figure 5**: `fig5_scatterplot`
-- **Figure 6**: `fig6_gpu_1_server_codes ==> this will be independent analysis uploaded here`
+- **Figure 6**: `fig6_ind_validation`
 
 To generate figures, navigate into the respective folder and run the associated Python or shell scripts.
 
